@@ -2,7 +2,7 @@
 title: jira-cli PRD
 status: final
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 
 ## 1. Vision
@@ -51,7 +51,7 @@ Any change to Jira (assignment, status transitions, comments) stays manual.
 
 ### F1. Ticket list
 
-- **FR-1** List tickets in the allowed projects, filtered by any combination of: project, assignee (including "me"), status, issue type, priority, sprint, and labels. With no filter, the list covers unresolved tickets in all allowed projects, most recently updated first.
+- **FR-1** List tickets in one or more explicitly requested allowed projects. A request with no project, or with any project that is not allowed, is refused, and the error names the allowed projects. Results can also be filtered by any combination of: assignee (including "me"), status, issue type, priority, sprint, and labels. With no status filter, the list covers unresolved tickets. Results are most recently updated first.
 - **FR-2** Return a limited number of results and page through larger result sets. The default page size comes from the user configuration file (initial value: 20); a request can never exceed an upper limit (initial value: 100).
 - **FR-3** Each list entry shows enough to choose a ticket: key, issue type, summary, status, priority, assignee, last updated.
 
@@ -59,7 +59,7 @@ Any change to Jira (assignment, status transitions, comments) stays manual.
 
 - **FR-4** Retrieve one ticket by key with everything needed to implement it: summary, description, issue type, status, priority, labels, components, fix versions, reporter, assignee, created and updated dates, and all comments in chronological order.
 - **FR-5** Present rich text (description, comments) as readable plain text that keeps its structure: headings, lists, code blocks, tables, links, and mentions.
-- **FR-6** Include populated custom fields under their display names.
+- **FR-6** Include populated custom fields under their display names. A value whose shape the tool cannot render safely is omitted, unless the engineer lists that field in the user configuration file, in which case it is output as raw structured data.
 
 ### F3. Related tickets
 
@@ -69,7 +69,7 @@ Any change to Jira (assignment, status transitions, comments) stays manual.
 ### F4. Attachments
 
 - **FR-9** List a ticket's attachments: file name, size, type, author, date.
-- **FR-10** Download selected attachments, or all of them, to a directory the caller chooses. Existing files are never overwritten silently.
+- **FR-10** Download selected attachments, or all of them, to a per-ticket folder managed by the tool, and report each file's location. A file already in that folder is replaced by the new download.
 
 ### F5. Change history
 
@@ -102,13 +102,13 @@ Any change to Jira (assignment, status transitions, comments) stays manual.
 ### F10. Work log
 
 - **FR-24** Every invocation is logged: timestamp, command and arguments, tickets touched, result (success or error category), and duration. Retrieved content itself is not logged.
-- **FR-25** When a ticket is retrieved by following a relationship from another ticket (parent, subtask, link), the log always records the originating ticket key.
+- **FR-25** When a ticket is retrieved through related-ticket retrieval from another ticket (parent, subtask, link), the log always records the originating ticket key. Tickets, history, and attachments read directly by key are logged as direct access, with no originating key.
 - **FR-26** Logs stay on the local machine. Losing them when a container is recreated is acceptable.
 
 ## 5. Non-Functional Requirements
 
 - **NFR-1 Responsiveness.** Retrieving a ticket, a list, or an attachment should feel comparable to doing the same in a browser. No hard target.
-- **NFR-2 Timeout.** Each request to Jira times out after 30 seconds and is reported as a timeout error (FR-20).
+- **NFR-2 Timeout.** Each request to Jira times out after 30 seconds and is reported as a timeout error (FR-20). An attachment download instead times out after 30 seconds waiting for the response or 30 seconds without progress, with no limit on total time.
 - **NFR-3 Platforms.** Runs on Windows and Linux, including inside WSL and Docker containers, on both x64 and arm64.
 - **NFR-4 Safety by construction.** Read-only behavior (FR-15) and the allowed-projects restriction (FR-12 to FR-14) are enforced by the tool itself, independent of token scope, and are covered by automated tests. This is a design guarantee; it is not tracked as a usage metric.
 - **NFR-5 Rate limits.** jira-cli is stateless and does no client-side throttling in v1. When Jira rejects a request for rate limiting, the tool reports it as a distinct error, including the wait time if Jira provides one. The tool does not retry automatically.
