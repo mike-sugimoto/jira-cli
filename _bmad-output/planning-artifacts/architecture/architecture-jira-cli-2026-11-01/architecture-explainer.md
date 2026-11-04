@@ -24,6 +24,8 @@ The binding rules are in the architecture spine, [ARCHITECTURE-SPINE.md](ARCHITE
 
 ## System context
 
+Jira's API calls every work item an issue, so `Issue` in the code means any type: epic, story, bug, task, subtask, or a custom type. jira-cli reads them all.
+
 ```mermaid
 flowchart LR
   Eng[Engineer] -->|chat| CC[Claude Code]
@@ -132,6 +134,7 @@ classDiagram
   class RelativeRequest {
     +PathSegments
     +QueryPairs
+    +ResponseKind
   }
   class RequestScope {
     <<closed set>>
@@ -145,12 +148,20 @@ classDiagram
   class VerifiedIssueScope {
     +Token VerifiedIssue
   }
+  class AttachmentRefScope {
+    +Ref AttachmentRef
+  }
+  class ChildKeysScope {
+    +Token VerifiedIssue
+  }
   class Unscoped
   class GetIssueRequest
   class SearchIssuesRequest
   class GetCommentsRequest
   class GetChangelogRequest
   class GetProjectRequest
+  class GetAttachmentContentRequest
+  class GetChildKeysRequest
   class GetMyselfRequest
   class VerifiedIssue {
     <<internal token>>
@@ -168,14 +179,20 @@ classDiagram
   RequestScope <|-- IssueScope
   RequestScope <|-- ProjectScope
   RequestScope <|-- VerifiedIssueScope
+  RequestScope <|-- AttachmentRefScope
+  RequestScope <|-- ChildKeysScope
   RequestScope <|-- Unscoped
   VerifiedIssueScope --> VerifiedIssue
+  AttachmentRefScope --> AttachmentRef
+  ChildKeysScope --> VerifiedIssue
   VerifiedIssue --> AttachmentRef
   GetIssueRequest ..|> IJiraRequest~T~ : IssueScope
   SearchIssuesRequest ..|> IJiraRequest~T~ : ProjectScope
   GetProjectRequest ..|> IJiraRequest~T~ : ProjectScope
   GetCommentsRequest ..|> IJiraRequest~T~ : VerifiedIssueScope
   GetChangelogRequest ..|> IJiraRequest~T~ : VerifiedIssueScope
+  GetAttachmentContentRequest ..|> IJiraRequest~T~ : AttachmentRefScope
+  GetChildKeysRequest ..|> IJiraRequest~T~ : ChildKeysScope
   GetMyselfRequest ..|> IJiraRequest~T~ : Unscoped
 ```
 
@@ -184,6 +201,8 @@ classDiagram
 | `IssueScope` | Key's project is allowed | Returned issue's project is allowed |
 | `ProjectScope` | Non-empty, and every project is allowed | Every returned item's project is allowed |
 | `VerifiedIssueScope` | Verification token was issued by this Gateway | None |
+| `AttachmentRefScope` | The ref was minted by this Gateway | None |
+| `ChildKeysScope` | Type is exactly `GetChildKeysRequest`, and the verification token was issued by this Gateway | Every item has a project; the allow-list is not applied |
 | `Unscoped` | Type is exactly `GetMyselfRequest` | None |
 
 The check after the call (the post-check) fails closed: a returned item with a missing project is refused. Comment and changelog responses carry no project, so those endpoints require a `VerifiedIssue`, which only a post-checked ticket response produces (AD-8).
@@ -213,6 +232,7 @@ classDiagram
   }
   class Issue
   class IssueSummary
+  class AttachmentSelection
   class TicketQuery
   class RelationSet {
     +Contains(IssueKey key) bool
@@ -240,6 +260,7 @@ classDiagram
   GetRelatedUseCase --> IInvocationContext
   DownloadAttachmentsUseCase --> IAttachmentReader
   DownloadAttachmentsUseCase --> IAttachmentStore
+  DownloadAttachmentsUseCase --> AttachmentSelection
   IIssueReader --> Issue
   IIssueReader --> IssueSummary
   Issue --> IssueKey
@@ -342,7 +363,7 @@ sequenceDiagram
 
 ### Following a related ticket
 
-Because the CLI is stateless, it can log the ticket that a traversal started from (the origin) only if the request includes it, so traversal has its own command. The tool checks that the requested ticket is related to the origin. Related tickets outside the allowed projects appear by key only (AD-10).
+Related tickets are the parent, subtasks, linked tickets, and children such as the stories under an epic. Jira records a child's parent on the child, so children need a search. Because the CLI is stateless, it can log the ticket that a traversal started from (the origin) only if the request includes it, so traversal has its own command. The tool checks that the requested ticket is related to the origin. Related tickets outside the allowed projects appear by key only (AD-10).
 
 ```mermaid
 sequenceDiagram
@@ -369,6 +390,10 @@ sequenceDiagram
   end
 ```
 
+### Children in other projects
+
+This search is the one deliberate exception to the rule that every search is limited to allowed projects. It is fixed to `parent = <verified ticket>`, requests only the `project` field, and keeps only ticket and project keys. It can't issue a verification token, so a disallowed child's content stays unreachable. A disallowed child appears by key only, and a notice tells the agent to ask the engineer to add the project. The command still succeeds, with exit code 0. Other allowed children remain readable.
+
 ## What the safety guarantee covers
 
 No argument, config path trick, or Jira response can make jira-cli write to Jira or read outside the allowed projects. Automated tests cover this guarantee (AD-3, AD-20).
@@ -378,22 +403,24 @@ No argument, config path trick, or Jira response can make jira-cli write to Jira
 | Write to Jira | The transport can only send GET |
 | JQL injection | Typed filters only, with one escaping builder |
 | Moved ticket | Post-check on the response's project |
-| Other-project data embedded in a ticket | Relations reduced to keys; unmappable custom field objects omitted |
+| Other-project data embedded in a ticket | Relations reduced to keys; custom fields rendered by schema type, and other types omitted; history values shown only for known fields |
 | Config redirected by `HOME` or `USERPROFILE` | Path resolved from the OS user record and process token, with no fallback |
 | API token printed through `@file` arguments | `@file` expansion turned off in the argument parser |
-| Attachment written to a sensitive location | No target option; saved only under the managed folder |
+| Attachment written to a sensitive location | No target option; saved only under the managed folder, refusing links in its path |
 | API token sent to another host | Sent only to the base URL, and redirects are not followed |
 
 ### Outside the guarantee
 
 - An agent can read the API token and call Jira directly. The PRD accepts this and relies on an API token with read-only scopes to limit the impact.
+- A child in a project the token's account can't see produces no notice, because Jira doesn't return it.
+- jira-cli trusts the OS user record for its config path, so containers must run the agent as non-root with `/etc/passwd` not writable by it.
 - jira-cli does not stop an agent from editing its config file. The engineer must protect the file and its parent directories, as the README describes.
-- Tampering with the process's runtime environment and editing the Windows registry are out of scope. Proxy settings follow .NET defaults, so pointing the tool at a different proxy is also out of scope.
+- Tampering with the process's runtime environment, editing the Windows registry, and a process under the same account changing the attachment folder during a download are out of scope. Proxy settings follow .NET defaults, so pointing the tool at a different proxy is also out of scope.
 - A field the engineer lists in `customFieldPassthrough` is output as raw JSON, including any other-project data it contains.
 
 ## Not yet proven
 
-- **Jira behavior:** nothing has run against a real Jira site. Assumptions about API behavior come from Atlassian's published OpenAPI specification. The first Gateway and attachment stories run live checks of `redirect=false`, attachment access with a scoped API token, comment paging, and the `statusCategory` filter.
+- **Jira behavior:** nothing has run against a real Jira site. Assumptions about API behavior come from Atlassian's published OpenAPI specification. The first Gateway and attachment stories run live checks of `redirect=false`, attachment access with a scoped API token, comment paging, and the `statusCategory` filter, and the child search.
 - **Corporate network:** the department uses a proxy, but its effect on the route to Jira is unknown. TLS inspection may require root certificates in WSL and Docker.
 - **Platforms:** package install and run were tested on win-arm64 and linux-arm64 glibc. Neither x64 nor Alpine (musl) has been tested.
 

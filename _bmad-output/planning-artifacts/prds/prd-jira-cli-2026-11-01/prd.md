@@ -2,7 +2,7 @@
 title: jira-cli PRD
 status: final
 created: 2026-11-01
-updated: 2026-11-03
+updated: 2026-11-05
 ---
 
 ## 1. Vision
@@ -63,7 +63,7 @@ Any change to Jira (assignment, status transitions, comments) stays manual.
 
 ### F3. Related tickets
 
-- **FR-7** Show a ticket's parent or epic, its subtasks, and its linked tickets with the link type (for example "blocks", "duplicates").
+- **FR-7** For a ticket of any type, show its parent or epic, its children (subtasks and tickets under an epic), and its linked tickets with the link type (for example "blocks", "duplicates"). When a child is in a project that is not allowed, the result still succeeds, shows that child by key only, and states that the engineer can add the project to the allowed projects.
 - **FR-8** Retrieve related tickets on request rather than automatically, so the agent pulls only the depth it needs.
 
 ### F4. Attachments
@@ -73,7 +73,7 @@ Any change to Jira (assignment, status transitions, comments) stays manual.
 
 ### F5. Change history
 
-- **FR-11** Show a ticket's change history: who changed which field, from what, to what, and when.
+- **FR-11** Show a ticket's change history: who changed which field, from what, to what, and when. The from and to values are omitted for fields the tool cannot render safely.
 
 ### F6. Access control
 
