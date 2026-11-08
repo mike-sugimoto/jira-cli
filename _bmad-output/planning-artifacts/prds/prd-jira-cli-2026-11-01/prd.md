@@ -2,7 +2,7 @@
 title: jira-cli PRD
 status: final
 created: 2026-11-01
-updated: 2026-11-05
+updated: 2026-11-08
 ---
 
 ## 1. Vision
@@ -32,7 +32,7 @@ jira-cli is the small, trustworthy bridge that makes this possible. It is **read
 - **Agent** — Claude Code, the caller of jira-cli.
 - **Allowed projects** — the Jira projects jira-cli may read, listed in the user configuration file.
 - **User configuration file** — the file holding the Jira site, credentials, allowed projects, and settings such as the default list size. Maintained by the engineer, not by the agent.
-- **Related ticket** — a ticket reached from another ticket through a parent, subtask, or issue link.
+- **Related ticket** — a ticket reached from another ticket through a parent, subtask, child, or issue link.
 - **Loop** — the request-to-merged-PR workflow described in §3.
 
 ## 3. The Loop jira-cli Serves
@@ -102,7 +102,7 @@ Any change to Jira (assignment, status transitions, comments) stays manual.
 ### F10. Work log
 
 - **FR-24** Every invocation is logged: timestamp, command and arguments, tickets touched, result (success or error category), and duration. Retrieved content itself is not logged.
-- **FR-25** When a ticket is retrieved through related-ticket retrieval from another ticket (parent, subtask, link), the log always records the originating ticket key. Tickets, history, and attachments read directly by key are logged as direct access, with no originating key.
+- **FR-25** When a ticket is retrieved through related-ticket retrieval from another ticket (parent, subtask, child, link), the log always records the originating ticket key. Tickets, history, and attachments read directly by key are logged as direct access, with no originating key.
 - **FR-26** Logs stay on the local machine. Losing them when a container is recreated is acceptable.
 
 ## 5. Non-Functional Requirements
