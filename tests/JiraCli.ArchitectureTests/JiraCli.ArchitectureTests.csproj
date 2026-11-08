@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="NetArchTest.eNhancedEdition" />
+    <PackageReference Include="Mono.Cecil" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\JiraCli.Cli\JiraCli.Cli.csproj" />
+    <ProjectReference Include="..\..\src\JiraCli.Application\JiraCli.Application.csproj" />
+    <ProjectReference Include="..\..\src\JiraCli.Domain\JiraCli.Domain.csproj" />
+    <ProjectReference Include="..\..\src\JiraCli.Infrastructure\JiraCli.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Atlassian.Common\Atlassian.Common.csproj" />
+  </ItemGroup>
+
+</Project>

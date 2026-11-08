@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>jira-cli</AssemblyName>
+    <RootNamespace>JiraCli.Cli</RootNamespace>
+    <Version>0.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JiraCli.Application\JiraCli.Application.csproj" />
+    <ProjectReference Include="..\JiraCli.Domain\JiraCli.Domain.csproj" />
+    <ProjectReference Include="..\JiraCli.Infrastructure\JiraCli.Infrastructure.csproj" />
+    <ProjectReference Include="..\Atlassian.Common\Atlassian.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="JiraCli.Cli.Tests" />
+  </ItemGroup>
+
+</Project>

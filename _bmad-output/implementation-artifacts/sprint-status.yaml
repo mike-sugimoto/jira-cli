@@ -29,14 +29,14 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-08-2026 21:29
-last_updated: 11-08-2026 21:29
+last_updated: 11-08-2026 21:58
 project: jira-cli
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 development_status:
-  epic-1: backlog
-  1-1-solution-skeleton-with-architecture-guards: backlog
+  epic-1: in-progress
+  1-1-solution-skeleton-with-architecture-guards: review
   1-2-json-envelope-error-categories-and-exit-codes: backlog
   1-3-fixed-config-location-and-the-doctor-config-check: backlog
   1-4-secret-redaction-and-the-work-log: backlog

@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Atlassian.Common/Atlassian.Common.csproj" />
+    <Project Path="src/JiraCli.Application/JiraCli.Application.csproj" />
+    <Project Path="src/JiraCli.Cli/JiraCli.Cli.csproj" />
+    <Project Path="src/JiraCli.Domain/JiraCli.Domain.csproj" />
+    <Project Path="src/JiraCli.Infrastructure/JiraCli.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Atlassian.Common.Tests/Atlassian.Common.Tests.csproj" />
+    <Project Path="tests/JiraCli.Application.Tests/JiraCli.Application.Tests.csproj" />
+    <Project Path="tests/JiraCli.ArchitectureTests/JiraCli.ArchitectureTests.csproj" />
+    <Project Path="tests/JiraCli.Cli.Tests/JiraCli.Cli.Tests.csproj" />
+    <Project Path="tests/JiraCli.Domain.Tests/JiraCli.Domain.Tests.csproj" />
+    <Project Path="tests/JiraCli.Infrastructure.Tests/JiraCli.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

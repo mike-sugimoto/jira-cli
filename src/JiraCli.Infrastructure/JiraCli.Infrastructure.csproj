@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JiraCli.Domain\JiraCli.Domain.csproj" />
+    <ProjectReference Include="..\Atlassian.Common\Atlassian.Common.csproj" />
+  </ItemGroup>
+
+</Project>
