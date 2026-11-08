@@ -1,0 +1,80 @@
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; the status view surfaces open ones
+generated: 11-08-2026 21:29
+last_updated: 11-08-2026 21:29
+project: jira-cli
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+development_status:
+  epic-1: backlog
+  1-1-solution-skeleton-with-architecture-guards: backlog
+  1-2-json-envelope-error-categories-and-exit-codes: backlog
+  1-3-fixed-config-location-and-the-doctor-config-check: backlog
+  1-4-secret-redaction-and-the-work-log: backlog
+  1-5-get-only-transport-with-contained-credentials: backlog
+  1-6-jiragateway-with-scope-checks: backlog
+  1-7-doctor-checks-credentials-reachability-and-project-access: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-list-tickets-in-named-allowed-projects: backlog
+  2-2-page-through-list-results: backlog
+  2-3-get-a-ticket-with-its-fields-and-markdown-description: backlog
+  2-4-comments-in-get: backlog
+  2-5-custom-fields-in-get: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-related-shows-parent-subtasks-and-links: backlog
+  3-2-related-shows-children-including-those-in-other-projects: backlog
+  3-3-read-a-related-ticket-with-related-origin-key-k: backlog
+  3-4-history-shows-the-change-history-safely: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-attachments-list: backlog
+  4-2-download-one-attachment-into-the-managed-folder: backlog
+  4-3-download-all-attachments: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-package-jira-cli-as-a-net-tool: backlog
+  5-2-readme-for-setup-and-protection: backlog
+  5-3-usage-guide-for-claude-code: backlog
+  5-4-release-gate-on-windows-and-linux: backlog
+  epic-5-retrospective: optional
+
+action_items:
+  - epic: 3
+    action: "Story 3.4: decide and record the system-field allow-list for history values, and where custom-field schema types come from (readiness gate CONCERNS, 11-08-2026)"
+    owner: "Mike"
+    status: open
