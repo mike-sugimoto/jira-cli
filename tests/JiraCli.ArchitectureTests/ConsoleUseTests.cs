@@ -13,7 +13,7 @@ public sealed class ConsoleUseTests
 {
     /// <summary>
     /// The single allow-list of types that may use <c>System.Console</c>.
-    /// Story 1.2 adds the envelope writer and the warning writer.
+    /// Story 1.4 adds the envelope writer and the warning writer.
     /// </summary>
     internal static readonly IReadOnlySet<string> AllowedConsoleUsers = new HashSet<string>(StringComparer.Ordinal)
     {

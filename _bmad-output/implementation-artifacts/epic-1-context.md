@@ -9,16 +9,16 @@ An engineer places the config file and runs `jira-cli doctor` to confirm that th
 ## Stories
 
 - Story 1.1: Solution skeleton with architecture guards
-- Story 1.2: JSON envelope, error categories, and exit codes
-- Story 1.3: Fixed config location and the `doctor` config check
-- Story 1.4: Secret redaction and the work log
-- Story 1.5: GET-only transport with contained credentials
+- Story 1.2: Fixed config location and config loading
+- Story 1.3: GET-only transport with contained credentials and a live check
+- Story 1.4: JSON envelope, error categories, and exit codes
+- Story 1.5: Secret redaction and the work log
 - Story 1.6: `JiraGateway` with scope checks
-- Story 1.7: `doctor` checks credentials, reachability, and project access
+- Story 1.7: `doctor` checks config, credentials, reachability, and project access
 
 ## Requirements & Constraints
 
-- **Read-only, always.** jira-cli never sends a write request to Jira, whatever the token allows. Safety comes from the tool itself, not from token scope, and is covered by automated tests on Windows and Linux. Tests never call real Jira.
+- **Read-only, always.** jira-cli never sends a write request to Jira, whatever the token allows. Safety comes from the tool itself, not from token scope, and is covered by automated tests on Windows and Linux. Tests never call real Jira; the engineer-run live-check tool is not a test.
 - **Allowed projects** come only from `allowedProjects` in the user config file. No option or environment variable can widen them or change the config path. Any read outside them is refused with `projectNotAllowed`.
 - **Credentials** (email + API token) live in the config file; the agent may read the file. Both classic tokens (site URL) and scoped tokens (`cloudId` gateway) must work. Tokens can expire (1 day to 1 year), so an expired token needs a clear error and hint. The token and its Basic header value never appear in stdout, stderr, or the log.
 - **Output:** every invocation except `--help`/`--version` writes exactly one JSON envelope with `formatVersion` to stdout. No human-readable output mode. `--help` documents every command and option.
@@ -79,10 +79,11 @@ An engineer places the config file and runs `jira-cli doctor` to confirm that th
 ## Cross-Story Dependencies
 
 - 1.1 provides the structure and architecture-test harness every later story extends.
-- 1.2's `Program` wrapper, `EnvelopeWriter`, and `ExceptionMapper` are reused by 1.3 (config errors, `doctor` partial results), 1.4 (the wrapper also writes the log), and 1.7. Ctrl+C behavior is decided and tested in 1.2.
-- 1.3's user-path resolution (passwd home / known folders, env ignored) is reused by 1.4 for the log location and by Epic 4 for the attachment folder. Config must load before parse errors are reported or logged (1.2/1.4 interaction).
-- 1.4's redactor needs the token from 1.3's config load.
-- 1.6 depends on 1.5's transport and `TransportException`; 1.7 depends on 1.3, 1.5, and 1.6 (`GetMyselfRequest`, `GetProjectRequest`).
+- 1.2's user-path resolution (passwd home / known folders, env ignored) is reused by 1.5 for the log location and by Epic 4 for the attachment folder. Its load failure is a value: 1.4 turns it into `config` (exit 3) and 1.7 reports it as the `doctor` config check. 1.2 registers the first real services, so it pins `ValidateOnBuild`/`ValidateScopes` (deferred from 1.1).
+- 1.3 depends on 1.2's `ConnectionSettings`. It adds `tools/JiraCli.LiveCheck`, an engineer-run live check against the real site with both token kinds; its findings amend AD-12 before 1.6 starts.
+- 1.4's `Program` wrapper, `EnvelopeWriter`, and `ExceptionMapper` are reused by 1.5 (the wrapper also writes the log) and 1.7. Ctrl+C behavior is decided and tested in 1.4. Config loads before parse errors are reported or logged (1.4/1.5 interaction).
+- 1.5's redactor needs the token from 1.2's config load.
+- 1.6 depends on 1.3's transport and `TransportException`; 1.7 depends on 1.2, 1.3, 1.4, and 1.6 (`GetMyselfRequest`, `GetProjectRequest`).
 - The remaining scope kinds are added later by the first story that needs each: `IssueScope` (2.3), `VerifiedIssueScope` (2.4), `ChildKeysScope` (3.2), `AttachmentRefScope` (4.2). Adding a scope kind or `Unscoped` entry requires changing the architecture decision.
-- 1.7 includes a manual live check by the engineer against a real department Jira site with a classic token (site URL) and a scoped read-only token (`cloudId` gateway); any difference from documented behavior is recorded and amends the credentials architecture decision.
+- 1.7 repeats the live check through `doctor` with a classic token (site URL) and a scoped read-only token (`cloudId` gateway); any difference from 1.3's findings is recorded and amends AD-12.
 - README coverage of config location, settings, and token setup lands in Epic 5; the release gate running all suites on Windows and Linux is Story 5.4.

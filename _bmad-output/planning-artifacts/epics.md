@@ -205,7 +205,79 @@ So that every later story starts from a structure that cannot drift.
 **Then** it prints plain text only, with exit code 0, and does not read the config file
 **And** each project exposes exactly one `Add…()` registration method, wired in a hand-built DI container in `Cli` with one scope per invocation
 
-### Story 1.2: JSON envelope, error categories, and exit codes
+### Story 1.2: Fixed config location and config loading
+
+As an engineer setting up jira-cli,
+I want the tool to read its config only from one fixed user-level location, and to report exactly which key is wrong,
+So that the agent cannot redirect it to another config and setup mistakes are easy to fix.
+
+**Requirements:** FR-12, FR-14, FR-17, AD-11
+
+**Acceptance Criteria:**
+
+**Given** Windows
+**When** the config path is resolved
+**Then** it is `<RoamingAppData>\jira-cli\config.json` from `SHGetKnownFolderPath` with an explicit process token, and `Environment.GetFolderPath` is never used for it (architecture test)
+
+**Given** Linux, WSL, or Docker
+**When** the config path is resolved
+**Then** it is `<passwd home>/.config/jira-cli/config.json` with the home from `getpwuid_r`
+**And** if the lookup fails, loading returns a `config` failure and never falls back
+
+**Given** a decoy config with wider `allowedProjects` reachable through hostile `HOME`, `XDG_*`, `USERPROFILE`, `HOMEDRIVE`, `HOMEPATH`, `APPDATA`, or `LOCALAPPDATA`
+**When** any command runs
+**Then** the decoy is never read, and no option or environment variable can change the path (FR-14)
+
+**Given** a config file
+**When** it is loaded once per invocation through source-generated `Load(path, JsonTypeInfo<T>)`
+**Then** top-level `site` (single DNS label), `email`, `apiToken`, and optional `cloudId` (GUID) map to `ConnectionSettings`, and the `jira-cli` section (`allowedProjects` non-empty, `customFieldPassthrough` matching `^customfield_[0-9]+$`, `defaultPageSize` 20, `maxPageSize` 100) maps to `AccessSettings`
+**And** a validation error names the offending key and never its value
+
+**Given** `allowedProjects` entries
+**When** they are loaded
+**Then** each becomes a `ProjectKey` value object (`^[A-Z][A-Z0-9_]+$`, upper-cased with ordinal rules), an invalid entry is a `config` error, and no raw project key string passes the Cli layer
+
+**Given** a missing, unreadable, or invalid config
+**When** it is loaded
+**Then** loading returns a failure value, not an exception, naming the cause or the offending key and never its value
+**And** Story 1.4 turns that value into `config` (exit 3) for commands, and Story 1.7 reports it as the `doctor` config check
+
+### Story 1.3: GET-only transport with contained credentials and a live check
+
+As an engineer handing jira-cli to an agent,
+I want the HTTP layer to be unable to send anything but GET, and to send my token only to my Jira base URL, and to confirm against my real Jira that it connects,
+So that no bug or hostile input can write to Jira or leak the token to another host.
+
+**Requirements:** FR-15, FR-16, NFR-2 (JSON), NFR-5, AD-5, AD-12, AD-19
+
+**Acceptance Criteria:**
+
+**Given** `IAtlassianTransport`
+**When** its public surface is inspected
+**Then** it exposes only `GetAsync(RelativeRequest, CancellationToken)`, where `RelativeRequest` holds path segments, query name and value pairs, and a `ResponseKind`, with no raw URL string and no method
+**And** only the transport implementation uses `HttpClient` (architecture test)
+
+**Given** a fake `HttpMessageHandler`
+**When** the transport suite sends requests
+**Then** every request is GET, path segments and query values are percent-encoded by the transport, and `.` and `..` segments are refused
+**And** the `Authorization` header goes on every request and only to the base URL that `AtlassianEndpoint` chooses: `https://<site>.atlassian.net/`, or `https://api.atlassian.com/ex/jira/<cloudId>/` when `cloudId` is set
+
+**Given** a 3xx response
+**When** the transport receives it
+**Then** no redirect is followed and it raises a `TransportException` carrying the status (Stories 1.4 and 1.6 map it to `unexpected`)
+**And** TLS validation is never disabled, and proxy selection stays the .NET default
+
+**Given** a JSON request
+**When** no complete response arrives within 30 seconds, or Jira returns a non-2xx status
+**Then** a `TransportException` carries the timeout or status (and `Retry-After` for 429), and no retry is attempted (NFR-2, NFR-5)
+
+**Given** the engineer's real config and the department Jira site (manual live check run by the engineer; never run by `dotnet test` or the release gate)
+**When** the engineer runs `tools/JiraCli.LiveCheck`, a console app in the solution that is never packaged, once with a classic token on the site URL and once with a scoped read-only token through the `cloudId` gateway
+**Then** it loads the config through Story 1.2's loader, sends `myself` and one `project/{key}` request per allowed project through `IAtlassianTransport`, and prints the endpoint in use, each status, and each response body, never the token or the `Authorization` header
+**And** it runs under the debugger with no extra setup
+**And** any difference from documented behavior is recorded and amends AD-12 before Story 1.6 starts
+
+### Story 1.4: JSON envelope, error categories, and exit codes
 
 As the agent calling jira-cli,
 I want every result as one JSON document with a fixed error category and exit code,
@@ -241,44 +313,12 @@ So that I can parse every outcome reliably and tell error kinds apart.
 **Then** the behavior decided in this story is documented in the code and covered by a test (spine Deferred item)
 **And** message language is fixed to English (`SatelliteResourceLanguages=en`), and stderr carries only warnings
 
-### Story 1.3: Fixed config location and the `doctor` config check
+**Given** a config load failure from Story 1.2
+**When** any command other than `doctor` runs
+**Then** the envelope has category `config` and the process exits 3
+**And** the config is loaded before a parse failure is reported
 
-As an engineer setting up jira-cli,
-I want the tool to read its config only from one fixed user-level location, and `doctor` to tell me what is wrong with it,
-So that the agent cannot redirect it to another config and I can fix setup mistakes quickly.
-
-**Requirements:** FR-12, FR-14, FR-17, FR-23 (config check), AD-11
-
-**Acceptance Criteria:**
-
-**Given** Windows
-**When** the config path is resolved
-**Then** it is `<RoamingAppData>\jira-cli\config.json` from `SHGetKnownFolderPath` with an explicit process token, and `Environment.GetFolderPath` is never used for it (architecture test)
-
-**Given** Linux, WSL, or Docker
-**When** the config path is resolved
-**Then** it is `<passwd home>/.config/jira-cli/config.json` with the home from `getpwuid_r`
-**And** if the lookup fails, the command fails with `config` (exit 3) and never falls back
-
-**Given** a decoy config with wider `allowedProjects` reachable through hostile `HOME`, `XDG_*`, `USERPROFILE`, `HOMEDRIVE`, `HOMEPATH`, `APPDATA`, or `LOCALAPPDATA`
-**When** any command runs
-**Then** the decoy is never read, and no option or environment variable can change the path (FR-14)
-
-**Given** a config file
-**When** it is loaded once per invocation through source-generated `Load(path, JsonTypeInfo<T>)`
-**Then** top-level `site` (single DNS label), `email`, `apiToken`, and optional `cloudId` (GUID) map to `ConnectionSettings`, and the `jira-cli` section (`allowedProjects` non-empty, `customFieldPassthrough` matching `^customfield_[0-9]+$`, `defaultPageSize` 20, `maxPageSize` 100) maps to `AccessSettings`
-**And** a validation error names the offending key and never its value
-
-**Given** `allowedProjects` entries
-**When** they are loaded
-**Then** each becomes a `ProjectKey` value object (`^[A-Z][A-Z0-9_]+$`, upper-cased with ordinal rules), an invalid entry is a `config` error, and no raw project key string passes the Cli layer
-
-**Given** a missing, unreadable, or invalid config
-**When** I run `jira-cli doctor`
-**Then** the envelope reports a failed config check with a fix hint instead of aborting the command
-**And** a valid config reports the config check as passed, while other commands raise `config` (exit 3) on load failure
-
-### Story 1.4: Secret redaction and the work log
+### Story 1.5: Secret redaction and the work log
 
 As an engineer,
 I want every invocation logged locally without content, and the token never shown anywhere,
@@ -295,7 +335,7 @@ So that I can audit what the agent accessed and no credential leaks.
 **Given** any invocation except `--help` and `--version`, including parser errors
 **When** it finishes
 **Then** the `Program` wrapper appends one JSON line through `WorkLogWriter` to a UTC-dated daily file: timestamp, command, redacted arguments, tickets touched, origin, result category, duration (ISO 8601 UTC with `Z`)
-**And** the file is opened in append mode with shared access, at `<passwd home>/.local/state/jira-cli/logs/` on Linux and `<LocalAppData>\jira-cli\logs\` on Windows, resolved as in Story 1.3
+**And** the file is opened in append mode with shared access, at `<passwd home>/.local/state/jira-cli/logs/` on Linux and `<LocalAppData>\jira-cli\logs\` on Windows, resolved as in Story 1.2
 
 **Given** config load failed
 **When** the invocation is logged
@@ -305,35 +345,6 @@ So that I can audit what the agent accessed and no credential leaks.
 **When** the log is written
 **Then** the write is refused, a warning goes to stderr, and stdout and the exit code are unchanged
 **And** commands themselves never write to the log
-
-### Story 1.5: GET-only transport with contained credentials
-
-As an engineer handing jira-cli to an agent,
-I want the HTTP layer to be unable to send anything but GET, and to send my token only to my Jira base URL,
-So that no bug or hostile input can write to Jira or leak the token to another host.
-
-**Requirements:** FR-15, FR-16, NFR-2 (JSON), NFR-5, AD-5, AD-12, AD-19
-
-**Acceptance Criteria:**
-
-**Given** `IAtlassianTransport`
-**When** its public surface is inspected
-**Then** it exposes only `GetAsync(RelativeRequest, CancellationToken)`, where `RelativeRequest` holds path segments, query name and value pairs, and a `ResponseKind`, with no raw URL string and no method
-**And** only the transport implementation uses `HttpClient` (architecture test)
-
-**Given** a fake `HttpMessageHandler`
-**When** the transport suite sends requests
-**Then** every request is GET, path segments and query values are percent-encoded by the transport, and `.` and `..` segments are refused
-**And** the `Authorization` header goes on every request and only to the base URL that `AtlassianEndpoint` chooses: `https://<site>.atlassian.net/`, or `https://api.atlassian.com/ex/jira/<cloudId>/` when `cloudId` is set
-
-**Given** a 3xx response
-**When** the transport receives it
-**Then** no redirect is followed and it raises a `TransportException` that maps to `unexpected`
-**And** TLS validation is never disabled, and proxy selection stays the .NET default
-
-**Given** a JSON request
-**When** no complete response arrives within 30 seconds, or Jira returns a non-2xx status
-**Then** a `TransportException` carries the timeout or status (and `Retry-After` for 429), and no retry is attempted (NFR-2, NFR-5)
 
 ### Story 1.6: `JiraGateway` with scope checks
 
@@ -369,15 +380,20 @@ So that no command can read outside the allowed projects, now or as features are
 **When** it reaches the Gateway
 **Then** it is translated to the Domain exception for its category (AD-14), and requested keys are recorded through `IInvocationContext` for the work log
 
-### Story 1.7: `doctor` checks credentials, reachability, and project access
+### Story 1.7: `doctor` checks config, credentials, reachability, and project access
 
 As an engineer setting up jira-cli,
-I want `doctor` to verify my token, the connection, and each allowed project,
+I want `doctor` to verify my config, my token, the connection, and each allowed project,
 So that I know the setup works before handing the tool to the agent.
 
 **Requirements:** FR-16, FR-20, FR-21, FR-23, AD-7, AD-13, AD-14
 
 **Acceptance Criteria:**
+
+**Given** a missing, unreadable, or invalid config
+**When** I run `jira-cli doctor`
+**Then** the envelope reports a failed config check with a fix hint instead of aborting the command
+**And** a valid config reports the config check as passed
 
 **Given** a valid config
 **When** I run `jira-cli doctor`
@@ -398,7 +414,7 @@ So that I know the setup works before handing the tool to the agent.
 
 **Given** a real department Jira site (live check, run by the engineer, not in automated tests)
 **When** `doctor` runs with a classic token on the site URL and with a scoped read-only token through the `cloudId` gateway
-**Then** both authenticate and every allowed project is reported accessible, and any difference from documented behavior is recorded and amends AD-12
+**Then** both authenticate and every allowed project is reported accessible, and any difference from the Story 1.3 live-check findings is recorded and amends AD-12
 
 ## Epic 2: List and read tickets
 
@@ -757,7 +773,7 @@ So that I can read the file, such as a log or screenshot, while implementing.
 
 **Given** `attachments download ABC-123 --name log.txt` or `--id <id>`
 **When** the attachment exists on that ticket
-**Then** it is saved to `<passwd home>/.cache/jira-cli/attachments/<canonical key>/` on Linux or `<LocalAppData>\jira-cli\attachments\<canonical key>\` on Windows, resolved as in Story 1.3
+**Then** it is saved to `<passwd home>/.cache/jira-cli/attachments/<canonical key>/` on Linux or `<LocalAppData>\jira-cli\attachments\<canonical key>\` on Windows, resolved as in Story 1.2
 **And** the result lists the file as `downloaded` with its absolute path, and an existing file with the same name is replaced
 
 **Given** a `--name` matching several attachments
