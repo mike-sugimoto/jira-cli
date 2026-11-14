@@ -18,3 +18,6 @@ _bmad/custom/config.user.toml
 .env
 *.secrets.json
 logs/
+
+# Code coverage (tools/coverage.ps1)
+coverage/

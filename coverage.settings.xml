@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Code coverage settings for Microsoft.Testing.Extensions.CodeCoverage, used by tools/coverage.ps1. -->
+<Configuration>
+  <CodeCoverage>
+    <!-- Measure only the shipped assemblies under src; test assemblies and packages are left out. -->
+    <ModulePaths>
+      <Include>
+        <ModulePath>.*[\\/]Atlassian\.Common\.dll$</ModulePath>
+        <ModulePath>.*[\\/]JiraCli\.Domain\.dll$</ModulePath>
+        <ModulePath>.*[\\/]JiraCli\.Application\.dll$</ModulePath>
+        <ModulePath>.*[\\/]JiraCli\.Infrastructure\.dll$</ModulePath>
+        <!-- JiraCli.Cli builds as jira-cli.dll (AssemblyName = the tool command). -->
+        <ModulePath>.*[\\/]jira-cli\.dll$</ModulePath>
+      </Include>
+    </ModulePaths>
+    <!-- Source generators (System.Text.Json, Regex) emit code nobody writes or reviews. -->
+    <Attributes>
+      <Exclude>
+        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+        <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
+      </Exclude>
+    </Attributes>
+    <Sources>
+      <Exclude>
+        <Source>.*\.g\.cs$</Source>
+      </Exclude>
+    </Sources>
+  </CodeCoverage>
+</Configuration>
