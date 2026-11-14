@@ -1,0 +1,37 @@
+// jira-cli config template.
+//
+// Copy this file to the one fixed location jira-cli reads, then replace the placeholder values:
+//   Windows: %APPDATA%\jira-cli\config.json
+//   Linux:   ~/.config/jira-cli/config.json  (the home directory from your passwd entry)
+// Environment variables and command-line arguments cannot change this location.
+//
+// Comments and trailing commas are allowed. Values must not start or end with spaces or line breaks.
+// The file holds your API token: make it readable only by you.
+{
+  // Your Atlassian site name: the part before .atlassian.net.
+  "site": "your-company",
+
+  // The email address of the Atlassian account that owns the API token.
+  "email": "you@example.com",
+
+  // An API token created at https://id.atlassian.com/manage-profile/security/api-tokens
+  "apiToken": "your-api-token",
+
+  // Scoped tokens only: uncomment this line and set your site's cloud id.
+  // Leave it commented out for a classic API token.
+  // "cloudId": "00000000-0000-0000-0000-000000000001",
+
+  "jira-cli": {
+    // Required: the project keys jira-cli may read.
+    "allowedProjects": ["ABC"],
+
+    // Optional: custom field ids (customfield_<digits>) passed through to output.
+    "customFieldPassthrough": [],
+
+    // Optional: results per page when no --limit is given (default 20).
+    "defaultPageSize": 20,
+
+    // Optional: the largest --limit allowed (default 100).
+    "maxPageSize": 100
+  }
+}

@@ -9,4 +9,8 @@
     <ProjectReference Include="..\..\src\JiraCli.Cli\JiraCli.Cli.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\docs\config.example.json" Link="config.example.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

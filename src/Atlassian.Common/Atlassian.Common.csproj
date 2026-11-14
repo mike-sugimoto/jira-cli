@@ -4,4 +4,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Atlassian.Common.Tests" />
+  </ItemGroup>
+
 </Project>
