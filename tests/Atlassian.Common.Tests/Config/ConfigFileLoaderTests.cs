@@ -9,28 +9,6 @@ using Atlassian.Common.Paths;
 
 namespace Atlassian.Common.Tests.Config;
 
-public sealed class SampleConfig
-{
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-    [JsonPropertyName("my-app")]
-    public SampleSection? Section { get; set; }
-}
-
-public sealed class SampleSection
-{
-    [JsonPropertyName("count")]
-    public int? Count { get; set; }
-
-    [JsonPropertyName("items")]
-    public List<int>? Items { get; set; }
-}
-
-[JsonSourceGenerationOptions(ReadCommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true, AllowDuplicateProperties = false)]
-[JsonSerializable(typeof(SampleConfig))]
-internal sealed partial class SampleConfigContext : JsonSerializerContext;
-
 public sealed class ConfigFileLoaderTests : IDisposable
 {
     private const string Secret = "SECRET-tok+en/value==";

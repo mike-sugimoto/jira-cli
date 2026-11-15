@@ -4,17 +4,6 @@ using JiraCli.Domain;
 namespace JiraCli.Cli.Config;
 
 /// <summary>
-/// Why the config could not be used. <see cref="Message"/> and <see cref="Hint"/> name the cause
-/// or key and the file path, never a value from the file.
-/// </summary>
-internal sealed record ConfigLoadFailure(
-    ConfigFileFailureKind Kind,
-    string? Key,
-    string Message,
-    string Hint,
-    string? Path);
-
-/// <summary>
 /// The config load outcome, loaded once per invocation and registered as a singleton. A failure is
 /// a value: Story 1.4 turns it into the <c>config</c> category and <c>doctor</c> reports it as a check.
 /// </summary>
