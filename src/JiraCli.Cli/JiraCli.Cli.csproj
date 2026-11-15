@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="JiraCli.Cli.Tests" />
+    <InternalsVisibleTo Include="JiraCli.LiveCheck" />
+    <InternalsVisibleTo Include="JiraCli.LiveCheck.Tests" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "LiveCheck",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build LiveCheck",
+      "program": "${workspaceFolder}/tools/JiraCli.LiveCheck/bin/Debug/net10.0/JiraCli.LiveCheck.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Engineer-run live check against the real Jira (Story 1.3b). Never packaged, never a test. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>JiraCli.LiveCheck</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\JiraCli.Cli\JiraCli.Cli.csproj" />
+    <ProjectReference Include="..\..\src\Atlassian.Common\Atlassian.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="JiraCli.LiveCheck.Tests" />
+  </ItemGroup>
+
+</Project>
