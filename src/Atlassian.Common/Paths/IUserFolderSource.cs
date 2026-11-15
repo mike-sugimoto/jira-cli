@@ -1,13 +1,5 @@
 namespace Atlassian.Common.Paths;
 
-/// <summary>The operating systems whose per-user folders can be resolved.</summary>
-internal enum UserPlatform
-{
-    Unsupported,
-    Windows,
-    Linux,
-}
-
 /// <summary>
 /// The native lookup seam behind <see cref="UserPaths"/>. The production implementation asks the
 /// OS for the folder of the user the process runs as; tests substitute failures and odd answers.

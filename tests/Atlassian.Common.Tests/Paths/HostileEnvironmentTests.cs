@@ -2,9 +2,6 @@ using Atlassian.Common.Paths;
 
 namespace Atlassian.Common.Tests.Paths;
 
-[CollectionDefinition(nameof(EnvironmentMutation), DisableParallelization = true)]
-public sealed class EnvironmentMutation;
-
 /// <summary>
 /// AD-11: a decoy config under every variable that usually points at a user folder must not
 /// redirect the config path. These tests change the process environment, so they run alone.
